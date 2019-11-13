@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import pandas
+import csv
 
 # Constants: start year and end year
 startYear = 2013
@@ -52,17 +53,18 @@ def get_games(month):
     return games
 
 
-def get_data(game, columns):
-    data = pandas.DataFrame(columns=columns)
+def get_data(game):
     soup = get_html(domain + game)
-    data.loc[0, 'Date'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1]
-    data.loc[0, 'Day'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1].split(' ')[2]
-    data.loc[0, 'Start (time)'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[0]
-    data.loc[0, 'VisitorTeamName'] = soup.find('div',class_='scorebox').findAll('div')[1].find('a',attrs = {'itemprop': "name"}).text
+
+    data = dict()
+    data['Date'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1]
+    data['Day'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1].split(' ')[2]
+    data['Start (time)'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[0]
+    data['VisitorTeamName'] = soup.find('div',class_='scorebox').findAll('div')[1].find('a',attrs = {'itemprop': "name"}).text
     for counter, line in enumerate(soup.findAll('table', class_ = 'sortable stats_table', attrs={'id':re.compile('(box-)*(-game-basic)')})[1].tbody.findAll('tr',attrs={'class':''})):
         if 'Did Not' in line.find('td').text:
             continue
-        data.loc[0, 'ATP' + str(counter) + 'MP'] = line.find('td', attrs={'data-stat': "mp"}).text
+        data['ATP' + str(counter) + 'MP'] = line.find('td', attrs={'data-stat': "mp"}).text
     print(data)
     # data[0, 'Date'] = soup.find
     # data[0, 'Date'] = soup.find
@@ -96,8 +98,8 @@ if __name__ == '__main__':
             games = get_games(month)
             for count_g, game in enumerate(games):
                 try:
-                    res = get_data(game, results.columns)
-                    results.append(res, ignore_index=True, sort=False)
+                    res = get_data(game)
+                    results = results.append(pandas.DataFrame([res], columns=res.keys()), sort=False)
                 except Exception:
                     print('Problem in ', game)
                 if count_g == 1:
@@ -105,6 +107,6 @@ if __name__ == '__main__':
             if count_m == 1:
                 break
 
+    results.to_csv(csvFile, index=False)
 
-    results.to_csv(csvFile)
 
