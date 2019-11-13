@@ -59,17 +59,21 @@ def get_data(game, columns):
     data[0, 'Day'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1].split(' ')[2]
     data[0, 'Start (time)'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[0]
     data[0, 'VisitorTeamName'] = soup.find('div',class_='scorebox').findAll('div')[1].find('a',attrs = {'itemprop': "name"}).text
-    data[0, 'ATP1MP'] = soup.find
-    data[0, 'Date'] = soup.find
-    data[0, 'Date'] = soup.find
-    data[0, 'Date'] = soup.find
-    data[0, 'Date'] = soup.find
-    data[0, 'Date'] = soup.find
-    data[0, 'Date'] = soup.find
-    data[0, 'Date'] = soup.find
-    data[0, 'Date'] = soup.find
-    data[0, 'Date'] = soup.find
-    data[0, 'Date'] = soup.find
+    for counter, line in enumerate(soup.findAll('table', class_ = 'sortable stats_table', attrs={'id':re.compile('(box-)*(-game-basic)')})[1].tbody.findAll('tr',attrs={'class':''})):
+        if 'Did Not Play' in line.find('td').text:
+            continue
+        data[0, 'ATP' + str(counter) + 'MP'] = line.find('td', attrs={'data-stat': "mp"}).text
+    print(data)
+    # data[0, 'Date'] = soup.find
+    # data[0, 'Date'] = soup.find
+    # data[0, 'Date'] = soup.find
+    # data[0, 'Date'] = soup.find
+    # data[0, 'Date'] = soup.find
+    # data[0, 'Date'] = soup.find
+    # data[0, 'Date'] = soup.find
+    # data[0, 'Date'] = soup.find
+    # data[0, 'Date'] = soup.find
+    # data[0, 'Date'] = soup.find
     return data
 
 
@@ -90,8 +94,10 @@ if __name__ == '__main__':
         months = get_months(year)
         for month in months:
             games = get_games(month)
-            for game in games:
+            for count, game in enumerate(games):
                 results.append(get_data(game, results.columns))
+                if count == 1:
+                    break
 
     results.to_csv(csvFile)
 
