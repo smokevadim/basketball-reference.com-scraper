@@ -55,14 +55,14 @@ def get_games(month):
 def get_data(game, columns):
     data = pandas.DataFrame(columns=columns)
     soup = get_html(domain + game)
-    data[0, 'Date'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1]
-    data[0, 'Day'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1].split(' ')[2]
-    data[0, 'Start (time)'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[0]
-    data[0, 'VisitorTeamName'] = soup.find('div',class_='scorebox').findAll('div')[1].find('a',attrs = {'itemprop': "name"}).text
+    data.loc[0, 'Date'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1]
+    data.loc[0, 'Day'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1].split(' ')[2]
+    data.loc[0, 'Start (time)'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[0]
+    data.loc[0, 'VisitorTeamName'] = soup.find('div',class_='scorebox').findAll('div')[1].find('a',attrs = {'itemprop': "name"}).text
     for counter, line in enumerate(soup.findAll('table', class_ = 'sortable stats_table', attrs={'id':re.compile('(box-)*(-game-basic)')})[1].tbody.findAll('tr',attrs={'class':''})):
-        if 'Did Not Play' in line.find('td').text:
+        if 'Did Not' in line.find('td').text:
             continue
-        data[0, 'ATP' + str(counter) + 'MP'] = line.find('td', attrs={'data-stat': "mp"}).text
+        data.loc[0, 'ATP' + str(counter) + 'MP'] = line.find('td', attrs={'data-stat': "mp"}).text
     print(data)
     # data[0, 'Date'] = soup.find
     # data[0, 'Date'] = soup.find
@@ -92,12 +92,19 @@ if __name__ == '__main__':
 
     for year in years:
         months = get_months(year)
-        for month in months:
+        for count_m, month in enumerate(months):
             games = get_games(month)
-            for count, game in enumerate(games):
-                results.append(get_data(game, results.columns))
-                if count == 1:
+            for count_g, game in enumerate(games):
+                try:
+                    res = get_data(game, results.columns)
+                    results.append(res, ignore_index=True, sort=False)
+                except Exception:
+                    print('Problem in ', game)
+                if count_g == 1:
                     break
+            if count_m == 1:
+                break
+
 
     results.to_csv(csvFile)
 
