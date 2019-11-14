@@ -15,6 +15,8 @@ endYear = 2019
 domain = "https://www.basketball-reference.com"
 csvFile = "basketball-reference-columns.csv"
 
+limit = 0 # number of entries per month. just for test. after test set to 0
+
 
 def get_years():
     years = []
@@ -46,10 +48,9 @@ def get_games(month):
         for count, game in enumerate(soup.find(id='schedule').tbody.findAll('td', attrs={'data-stat': 'box_score_text'}), start=1):
             games.append(game.find('a').attrs['href'])
 
-            #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            # Requesting ONLY 4 games in month for test. After test delete this.
-            if count==4:
-                break
+            if limit > 0:
+                if count==limit:
+                    break
     except:
         pass
 
