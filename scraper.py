@@ -13,13 +13,13 @@ from threading import Thread
 
 
 # Constants: start year and end year
-startYear = 2019
-endYear = 2019
+startYear = 2001
+endYear = 2005
 domain = "https://www.basketball-reference.com"
 csvFile = "basketball-reference-columns.csv"
 abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
 
-limit = 4 # number of entries per month. just for test. after test set to 0
+limit = 0 # number of entries per month. just for test. after test set to 0
 
 
 def get_years():
