@@ -2,7 +2,6 @@
 basketball-reference.com scraper
 author: Vadim Gazizov (smoke.kaliningrad@gmail.com)
 '''
-
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -13,8 +12,8 @@ from threading import Thread
 
 
 # Constants: start year and end year
-startYear = 2001
-endYear = 2005
+startYear = 2006
+endYear = 2006
 domain = "https://www.basketball-reference.com"
 csvFile = "basketball-reference-columns.csv"
 abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
@@ -183,7 +182,7 @@ def get_html(url):
 
 
 def run_in_thread(games):
-    step = 4
+    step = 100
     threads = []
     for i in range(0, len(games), step):
         t = Thread(target=get_data_and_append, args=(games[i:i + step],))
@@ -206,8 +205,8 @@ def get_data_and_append(games):
 
 if __name__ == '__main__':
     years = get_years()
+
     results = pandas.DataFrame(columns=check_columns())
-    #results = pandas.read_csv(csvFile) #commented coz *.csv from task have not all columns
 
     for year in years:
         months = get_months(year)
@@ -216,6 +215,6 @@ if __name__ == '__main__':
 
             run_in_thread(games)
 
-    results.to_csv(csvFile, index=False)
+    results.to_csv(csvFile, mode='a', index=False)
 
 
