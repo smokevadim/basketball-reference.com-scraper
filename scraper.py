@@ -7,15 +7,19 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import pandas
+from datetime import date
+import calendar
 from threading import Thread
+
 
 # Constants: start year and end year
 startYear = 2019
 endYear = 2019
 domain = "https://www.basketball-reference.com"
 csvFile = "basketball-reference-columns.csv"
+abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
 
-limit = 0 # number of entries per month. just for test. after test set to 0
+limit = 4 # number of entries per month. just for test. after test set to 0
 
 
 def get_years():
@@ -62,13 +66,13 @@ def check_columns():
     home = []
     for i in range(1,19):
         away +=[_ for _ in '\
-    ATP{0}MP, ATP{0}FG, ATP{0}FGA, ATP{0}FGPerc, ATP{0}P, ATP{0}PA, ATP{0}PPerc, ATP{0}FT,\
+    ATP{0}Name, ATP{0}MP, ATP{0}FG, ATP{0}FGA, ATP{0}FGPerc, ATP{0}P, ATP{0}PA, ATP{0}PPerc, ATP{0}FT,\
     ATP{0}FTA, ATP{0}FTPerc, ATP{0}ORB, ATP{0}DRB, ATP{0}TRB, ATP{0}AST, ATP{0}STL, ATP{0}BLK, ATP{0}TOV, ATP{0}PF, ATP{0}PTS, ATP{0}PM, \
     ATP{0}TSPerc, ATP{0}eFGPerc, ATP{0}PAr, ATP{0}FTr, ATP{0}ORBPerc, ATP{0}DRBPerc, ATP{0}TRBPerc, ATP{0}ASTPerc, ATP{0}STLPerc, \
     ATP{0}BLKPerc, ATP{0}TOVPerc, ATP{0}USGPerc, ATP{0}ORtg, ATP{0}DRtg'.format(str(i)).replace(' ','').split(',')]
 
         home += [_ for _ in '\
-        HTP{0}MP, HTP{0}FG, HTP{0}FGA, HTP{0}FGPerc, HTP{0}P, HTP{0}PA, HTP{0}PPerc, HTP{0}FT, HTP{0}FTA, HTP{0}FTPerc, \
+        HTP{0}Name, HTP{0}MP, HTP{0}FG, HTP{0}FGA, HTP{0}FGPerc, HTP{0}P, HTP{0}PA, HTP{0}PPerc, HTP{0}FT, HTP{0}FTA, HTP{0}FTPerc, \
             HTP{0}ORB, HTP{0}DRB, HTP{0}TRB, HTP{0}AST, HTP{0}STL, HTP{0}BLK, HTP{0}TOV, HTP{0}PF, HTP{0}PTS, HTP{0}PM, HTP{0}TSPerc, HTP{0}eFGPerc, \
             HTP{0}PAr, HTP{0}FTr, HTP{0}ORBPerc, HTP{0}DRBPerc, HTP{0}TRBPerc, HTP{0}ASTPerc, HTP{0}STLPerc, HTP{0}BLKPerc, HTP{0}TOVPerc, \
             HTP{0}USGPerc, HTP{0}ORtg, HTP{0}DRtg'.format(str(i)).replace(' ','').split(',')]
@@ -81,7 +85,7 @@ def check_columns():
 
     columns+= [_ for _ in 'HomeQ1Pts, HomeQ2Pts, HomeQ3Pts, HomeQ4Pts, HomeOT1Pts, \
     HomeOT2Pts, HomeOT3Pts, HomeOT4Pts, HomeOT5Pts, HomePts, Official1, Official2, \
-    Official3'.format(str(i)).replace(' ','').split(',')]
+    Official3, Attendance'.format(str(i)).replace(' ','').split(',')]
     return columns
 
 
@@ -89,8 +93,14 @@ def get_data(game):
     soup = get_html(domain + game)
 
     data = dict()
+
+    weekday = date(
+        int(soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[2].strip()),
+        abbr_to_num[soup.find('div', attrs={'class': 'scorebox_meta'}).find('div').text.split(',')[1].split(' ')[1].strip()[:3]],
+        int(soup.find('div', attrs={'class': 'scorebox_meta'}).find('div').text.split(',')[1].split(' ')[2].strip())).strftime('%A')
+    data['Day'] = weekday
+
     data['Date'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1].strip()+','+soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[2].rstrip()
-    data['Day'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[1].split(' ')[2].strip()
     data['Start (time)'] = soup.find('div', attrs = {'class': 'scorebox_meta'}).find('div').text.split(',')[0]
     data['VisitorTeamName'] = soup.find('div',class_='scorebox').findAll('a',attrs = {'itemprop': "name"})[1].text
     data['HomeTeamName'] = soup.find('div',class_='scorebox').findAll('a',attrs = {'itemprop': "name"})[0].text
@@ -101,6 +111,7 @@ def get_data(game):
                 line = soup.findAll('table', class_ = 'sortable stats_table', attrs={'id':re.compile('(box-)*(-game-basic)')})[1 if team == 'A' else 0].tbody.findAll('tr',attrs={'class':''})[counter]
                 if 'Did Not' in line.find('td').text:
                     continue
+                data[team + 'TP' + str(counter + 1) + 'Name'] = line.find('th', attrs={'data-stat': "player"}).find('a').text
                 data[team + 'TP' + str(counter+1) + 'MP'] = line.find('td', attrs={'data-stat': "mp"}).text
                 data[team + 'TP' + str(counter+1) + 'FG'] = line.find('td', attrs={'data-stat': "fg"}).text
                 data[team + 'TP' + str(counter+1) + 'FGA'] = line.find('td', attrs={'data-stat': "fga"}).text
@@ -152,10 +163,15 @@ def get_data(game):
                 data[('Away' if team == 'A' else 'Home') + 'OT' + str(ot_count) + 'Pts'] = away.text
                 ot_count += 1
 
-    # officcal - IDK what to write here
-    #data['Official1'] = soup.find('div', class_='scorebox').findAll('a', attrs={'itemprop': "name"})[0].text
-    #data['Official2'] = soup.find('div', class_='scorebox').findAll('a', attrs={'itemprop': "name"})[0].text
-    #data['Official3'] = soup.find('div', class_='scorebox').findAll('a', attrs={'itemprop': "name"})[0].text
+    # officials
+    officials = soup.find('strong', string=re.compile('Officials:')).find_all_next('a', attrs={'href': re.compile('.*(referees).*')})
+    for count, official in enumerate(officials, start=1):
+        data['Official'+str(count)] = official.text
+        if count == 3:
+            break
+
+    # Attendance
+    data['Attendance'] = str(soup.find('strong', string=re.compile('Attendance:')).next_sibling.strip(','))
 
     print(game, ' - OK!')
     return data
