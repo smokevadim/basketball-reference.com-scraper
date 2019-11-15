@@ -182,7 +182,7 @@ def get_html(url):
 
 
 def run_in_thread(games):
-    step = 100
+    step = 10
     threads = []
     for i in range(0, len(games), step):
         t = Thread(target=get_data_and_append, args=(games[i:i + step],))
@@ -199,6 +199,9 @@ def get_data_and_append(games):
         try:
             res = get_data(game)
             results = results.append(pandas.DataFrame([res], columns=results.keys()), sort=False)
+            results.to_csv(csvFile, mode='a', index=False, header=False if os.path.exists(csvFile) else True)
+            results = results[0:0]
+
         except Exception:
             print('Problem in ', game)
 
@@ -214,8 +217,6 @@ if __name__ == '__main__':
             games = get_games(month)
 
             run_in_thread(games)
-            results.to_csv(csvFile, mode='a', index=False, header=False if os.path.exists(csvFile) else True)
-
 
 
 
