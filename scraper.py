@@ -9,11 +9,11 @@ import pandas
 from datetime import date
 import calendar
 from threading import Thread
-
+import os.path
 
 # Constants: start year and end year
-startYear = 2006
-endYear = 2006
+startYear = 2001
+endYear = 2001
 domain = "https://www.basketball-reference.com"
 csvFile = "basketball-reference-columns.csv"
 abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
@@ -214,7 +214,8 @@ if __name__ == '__main__':
             games = get_games(month)
 
             run_in_thread(games)
+            results.to_csv(csvFile, mode='a', index=False, header=False if os.path.exists(csvFile) else True)
 
-    results.to_csv(csvFile, mode='a', index=False)
+
 
 
