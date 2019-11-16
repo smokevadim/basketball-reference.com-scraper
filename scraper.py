@@ -13,7 +13,7 @@ import os.path
 
 # Constants: start year and end year
 startYear = 2001
-endYear = 2001
+endYear = 2019
 domain = "https://www.basketball-reference.com"
 csvFile = "basketball-reference-columns.csv"
 abbr_to_num = {name: num for num, name in enumerate(calendar.month_abbr) if num}
@@ -205,6 +205,21 @@ def get_data_and_append(games):
         except Exception:
             print('Problem in ', game)
 
+def sort_csv():
+    pf = pandas.read_csv(csvFile, low_memory=False, )
+    pf['Year'] = ''
+    pf['Month'] = ''
+    pf['Day_'] = ''
+    pf.drop_duplicates(subset=['Date', 'Start (time)', 'VisitorTeamName'], keep='first', inplace=True)
+    for row in pf.index:
+        pf['Year'][row] = int(pf['Date'][row].split(' ')[2].strip())
+        pf['Month'][row] = abbr_to_num[(pf['Date'][row].split(',')[0].split(' ')[0].strip())[:3]]
+        pf['Day_'][row] = int(pf['Date'][row].split(',')[0].split(' ')[1].strip())
+    pf.sort_values(by=['Year', 'Month', 'Day_'], inplace=True)
+    del pf['Year']
+    del pf['Month']
+    del pf['Day_']
+    pf.to_csv(csvFile, mode='w', index=False)
 
 if __name__ == '__main__':
     years = get_years()
@@ -218,5 +233,7 @@ if __name__ == '__main__':
 
             run_in_thread(games)
 
+    results = None
+    sort_csv()
 
 
